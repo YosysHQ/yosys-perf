@@ -6,10 +6,10 @@ Runtime and memory usage test collection for [Yosys](https://github.com/YosysHQ/
 
 ```bash
 # Run synthesis benchmarks on all designs
-python analyze.py
+python thing.py
 
 # Compare two Yosys builds
-python analyze.py --yosys ./yosys-old ./yosys-new --csv
+python thing.py --yosys ./yosys-old ./yosys-new --csv
 ```
 
 ## Directory structure
