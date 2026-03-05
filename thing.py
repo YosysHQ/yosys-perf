@@ -165,6 +165,7 @@ def _parse_stat_new(output, cells_match):
     stats = {"cells": int(cells_match.group(1))}
     cells = {}
     for line in output[cells_match.end():].split('\n'):
+        # "    24453   $_AND_" — 3+ spaces separates cells from submodule lines
         m = re.match(r'^\s+(\d+)\s{3,}(\S+)\s*$', line)
         if m:
             cells[m.group(2)] = int(m.group(1))
@@ -182,6 +183,7 @@ def _parse_stat_new(output, cells_match):
 
 
 def _parse_stat_old(output):
+    # grab everything between the stat header and end-of-script
     match = re.search(
         r'(?:Printing statistics|Count including submodules).*?\n(.*?)(?=End of script|\Z)',
         output, re.DOTALL | re.IGNORECASE,
@@ -194,6 +196,7 @@ def _parse_stat_old(output):
             stats[field] = int(m.group(1))
 
     cells = {}
+    # capture indented "celltype  count" lines after "Number of cells:"
     cs = re.search(r'Number of cells:\s+\d+\s*\n((?:\s+\S+\s+\d+\s*\n)*)', summary, re.IGNORECASE)
     if cs:
         for m in re.finditer(r'^\s+(\S+)\s+(\d+)\s*$', cs.group(1), re.MULTILINE):
@@ -215,6 +218,7 @@ def parse_stat(output):
         stats["wall_time"] = float(m.group(1))
         stats["time"] = stats["wall_time"]
 
+    # "CPU: user 3.30s system 0.15s, MEM: 58.18 MB peak"
     m = re.search(r'CPU:\s*user\s+([\d.]+)s\s+system\s+([\d.]+)s.*?MEM:\s*([\d.]+)\s*MB', output)
     if m:
         stats["user_time"] = float(m.group(1))
@@ -223,6 +227,7 @@ def parse_stat(output):
             stats["time"] = stats["user_time"] + stats["sys_time"]
         stats["mem_mb"] = float(m.group(3))
 
+    # "Time spent: 43% 2x abc (2 sec), 13% 43x opt_dff (0 sec), ..."
     m = re.search(r'Time spent:\s*(.+?)(?:\n|$)', output)
     if m:
         stats["top_times"] = [
@@ -230,6 +235,7 @@ def parse_stat(output):
             for pm in re.finditer(r'(\d+)%\s+(\d+)x\s+(\w+)\s*\((\d+)\s*sec\)', m.group(1))
         ]
 
+    # "ABC: netlist ... nd = 46906 ... lev = 24"
     for m in re.finditer(r'ABC:.*?nd\s*=\s*(\d+).*?lev\s*=\s*(\d+)', output):
         stats["abc_nd"] = stats.get("abc_nd", 0) + int(m.group(1))
         lev = int(m.group(2))
@@ -240,6 +246,7 @@ def parse_stat(output):
 
 
 def parse_detailed_timing(output):
+    # " 31%  1 call  1.554 sec  abc"
     return sorted(
         [
             (m.group(4), float(m.group(3)), int(m.group(2)))
