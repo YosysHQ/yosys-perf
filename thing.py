@@ -228,18 +228,13 @@ def parse_stat(output):
     else:
         stats = _parse_stat_old(output)
 
-    m = re.search(r'Wall:\s*([\d.]+)s', output)
+    # "time: 6.59s, user: 7.31s, system: 0.39s, MEM: 396.04 MB peak"
+    m = re.search(r'time:\s*([\d.]+)s,\s*user:\s*([\d.]+)s,\s*system:\s*([\d.]+)s.*?MEM:\s*([\d.]+)\s*MB', output)
     if m:
         stats["wall_time"] = float(m.group(1))
         stats["time"] = stats["wall_time"]
-
-    # "CPU: user 3.30s system 0.15s, Wall: 65.43s, MEM: 58.18 MB peak"
-    m = re.search(r'CPU:\s*user\s+([\d.]+)s\s+system\s+([\d.]+)s,\s*Wall:\s*([\d.]+)s.*?MEM:\s*([\d.]+)\s*MB', output)
-    if m:
-        stats["user_time"] = float(m.group(1))
-        stats["sys_time"] = float(m.group(2))
-        stats["wall_time"] = float(m.group(3))
-        stats["time"] = stats["wall_time"]
+        stats["user_time"] = float(m.group(2))
+        stats["sys_time"] = float(m.group(3))
         stats["mem_mb"] = float(m.group(4))
     else:
         # fallback for builds without wall time
@@ -334,14 +329,12 @@ class HumanOut:
         else:
             prefix = design
 
+        wall = stats.get("wall_time")
         user = stats.get("user_time")
-        if user is not None:
-            cpu = f"user {user:.2f}s system {stats['sys_time']:.2f}s"
-            wall = stats.get("wall_time")
-            if wall is not None:
-                print(f"{prefix}: wall {wall:.2f}s ({cpu}), MEM: {stats['mem_mb']:.2f} MB")
-            else:
-                print(f"{prefix}: CPU {cpu}, MEM: {stats['mem_mb']:.2f} MB")
+        if wall is not None:
+            print(f"{prefix}: time {wall:.2f}s (user {user:.2f}s system {stats['sys_time']:.2f}s), MEM: {stats['mem_mb']:.2f} MB")
+        elif user is not None:
+            print(f"{prefix}: user {user:.2f}s system {stats['sys_time']:.2f}s, MEM: {stats['mem_mb']:.2f} MB")
         else:
             print(f"{prefix}:")
 
